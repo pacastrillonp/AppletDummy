@@ -2,6 +2,7 @@ package co.pacastrillonp.appletdummy
 
 import android.annotation.SuppressLint
 import android.os.Bundle
+import android.util.Log
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.Toast
@@ -18,6 +19,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
+import co.pacastrillonp.appletdummy.repository.LocalServerRepositoryImpl
 import co.pacastrillonp.appletdummy.repository.StorageRepositoryImpl
 import co.pacastrillonp.appletdummy.ui.theme.AppletDummyTheme
 import java.io.File
@@ -25,6 +27,13 @@ import java.io.File
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        val mediaPath = StorageRepositoryImpl(this).mediaPath
+        val file = File(mediaPath, "index.html")
+        val serverStarted = LocalServerRepositoryImpl().startServer(file)
+        if (!serverStarted) {
+          Log.d("MainActivity", "Server not started")
+        }
 
         setContent {
             AppletDummyTheme {
@@ -72,7 +81,8 @@ fun WebView.loadLocalFile(context: android.content.Context) {
         val file = File(mediaPath, "index.html")
         if (file.exists()) {
             val path = file.absolutePath
-            loadUrl("file://$path")
+//            loadUrl("file://$path")
+            loadUrl("http://localhost:8080")
         } else {
             Toast.makeText(context, "File not found", Toast.LENGTH_LONG).show()
         }

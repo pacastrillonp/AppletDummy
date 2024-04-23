@@ -61,6 +61,9 @@ dependencies {
     implementation(libs.androidx.material3)
     implementation (libs.androidx.webkit)
 
+
+    implementation (libs.nanohttpd)
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
