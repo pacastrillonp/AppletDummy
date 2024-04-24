@@ -1,34 +1,32 @@
 package co.pacastrillonp.appletdummy.repository
+
+import android.util.Log
 import fi.iki.elonen.NanoHTTPD
 import java.io.File
 import java.io.FileInputStream
-import java.io.IOException
 
-interface LocalServerRepository {
-    fun startServer(file: File): Boolean
-}
-
-class LocalServerRepositoryImpl : LocalServerRepository {
-
-    private var server: LocalWebServer? = null
-
-    override fun startServer(file: File): Boolean {
-        return try {
-            server?.stop()
-            server = LocalWebServer(8080, file)
-            server?.start()
-            true
-        } catch (e: IOException) {
-            e.printStackTrace()
-            false
-        }
-    }
-
-}
-
-class LocalWebServer(private val port: Int, private val file: File) : NanoHTTPD(port) {
+class LocalWebServer(port: Int, private val file: File) : NanoHTTPD(port) {
     override fun serve(session: IHTTPSession): Response {
-        val fileInputStream = FileInputStream(file)
-        return newChunkedResponse(Response.Status.OK, "text/html", fileInputStream)
+        return try {
+            val fileInputStream = FileInputStream(file)
+            val mimeType = when (file.extension) {
+                "html" -> "text/html"
+                "js" -> "application/javascript"
+                "css" -> "text/css"
+                else -> "application/octet-stream"
+            }
+            Log.d(
+                "LocalWebServer",
+                "Serving file with extension ${file.extension} and MIME type $mimeType"
+            )
+            newChunkedResponse(Response.Status.OK, mimeType, fileInputStream)
+        } catch (e: Exception) {
+            Log.e("LocalWebServer", "Error serving file", e)
+            newFixedLengthResponse(
+                Response.Status.INTERNAL_ERROR,
+                "text/plain",
+                "Internal Server Error"
+            )
+        }
     }
 }
