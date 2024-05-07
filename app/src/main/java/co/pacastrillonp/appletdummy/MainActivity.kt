@@ -86,10 +86,14 @@ fun rememberWebViewWithClient(
 ): WebView {
     val webView = WebView(LocalContext.current)
     webView.apply {
-        settings.javaScriptEnabled = true
-        settings.domStorageEnabled = true
-        settings.allowFileAccess = true
-        settings.allowContentAccess = true
+        settings.apply {
+            javaScriptEnabled = true
+            domStorageEnabled = true
+            allowFileAccess = true
+            allowContentAccess = true
+            allowFileAccessFromFileURLs = true
+
+        }
     }
     webViewClient(webView)
     return webView
