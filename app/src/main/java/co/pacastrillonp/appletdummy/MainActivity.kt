@@ -2,6 +2,9 @@ package co.pacastrillonp.appletdummy
 
 import android.annotation.SuppressLint
 import android.os.Bundle
+import android.util.Log
+import android.webkit.ConsoleMessage
+import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.Toast
@@ -92,7 +95,15 @@ fun rememberWebViewWithClient(
             allowFileAccess = true
             allowContentAccess = true
             allowFileAccessFromFileURLs = true
+            allowUniversalAccessFromFileURLs = true
 
+        }
+
+        webChromeClient = object : WebChromeClient() {
+            override fun onConsoleMessage(consoleMessage: ConsoleMessage): Boolean {
+                Log.d("WebView", "${consoleMessage.message()} -- From line ${consoleMessage.lineNumber()} of ${consoleMessage.sourceId()}")
+                return super.onConsoleMessage(consoleMessage)
+            }
         }
     }
     webViewClient(webView)
