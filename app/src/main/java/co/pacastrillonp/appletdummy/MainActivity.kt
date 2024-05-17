@@ -21,12 +21,25 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
-import co.pacastrillonp.appletdummy.repository.LocalWebServer
 import co.pacastrillonp.appletdummy.repository.StorageRepositoryImpl
+import co.pacastrillonp.appletdummy.repository.module
 import co.pacastrillonp.appletdummy.ui.theme.AppletDummyTheme
+import io.ktor.application.*
+import io.ktor.features.*
+import io.ktor.gson.*
+import io.ktor.http.content.file
+import io.ktor.http.content.static
+import io.ktor.response.*
+import io.ktor.routing.*
+import io.ktor.server.engine.embeddedServer
+import io.ktor.server.netty.Netty
+import io.ktor.server.netty.NettyApplicationEngine
 import java.io.File
 
 class MainActivity : ComponentActivity() {
+
+    private lateinit var server: NettyApplicationEngine
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -34,8 +47,7 @@ class MainActivity : ComponentActivity() {
         storageRepository.mediaPath?.let { mediaPath ->
             val file = File(mediaPath, "index.html")
             if (file.exists()) {
-                val server = LocalWebServer(8080, file)
-                server.start()
+                startServer()
             } else {
                 Toast.makeText(this, "File not found", Toast.LENGTH_LONG).show()
             }
@@ -52,6 +64,22 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+
+    }
+
+    override fun onDestroy() {
+        server.stop(0, 0)
+        super.onDestroy()
+    }
+
+    private fun startServer(mediaPath: String) {
+        server = embeddedServer(Netty, port = 8080) {
+            module()
+            static("/") {
+                file("index.html", mediaPath)
+            }
+        }
+        server.start()
     }
 
 }
@@ -67,7 +95,7 @@ fun LocalWebPage() {
         modifier = Modifier.fillMaxSize(),
         factory = {
             webView.apply {
-                loadUrl("http://localhost:8080")
+                loadUrl("http://localhost:8080/api/data")
                 lifecycleOwner.lifecycle.addObserver(object : LifecycleEventObserver {
                     override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
                         if (event == Lifecycle.Event.ON_DESTROY) {
