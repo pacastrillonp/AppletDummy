@@ -21,33 +21,33 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
+import co.pacastrillonp.appletdummy.repository.LocalWebServer
 import co.pacastrillonp.appletdummy.repository.StorageRepositoryImpl
-import co.pacastrillonp.appletdummy.repository.module
 import co.pacastrillonp.appletdummy.ui.theme.AppletDummyTheme
-import io.ktor.application.*
-import io.ktor.features.*
-import io.ktor.gson.*
-import io.ktor.http.content.file
-import io.ktor.http.content.static
-import io.ktor.response.*
-import io.ktor.routing.*
-import io.ktor.server.engine.embeddedServer
-import io.ktor.server.netty.Netty
-import io.ktor.server.netty.NettyApplicationEngine
 import java.io.File
+import java.io.IOException
 
 class MainActivity : ComponentActivity() {
 
-    private lateinit var server: NettyApplicationEngine
-
+    private var server: LocalWebServer? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         val storageRepository = StorageRepositoryImpl(this)
         storageRepository.mediaPath?.let { mediaPath ->
-            val file = File(mediaPath, "index.html")
+
+            val file = File(mediaPath, "/web/index.html")
+            val rootDir = File("$mediaPath/web")
             if (file.exists()) {
-                startServer()
+                server = LocalWebServer(file, rootDir).apply {
+                    try {
+                        start()
+                    } catch (ioe: IOException) {
+                        Log.e("HTTP server", "No se pudo iniciar el servidor.", ioe)
+                    } catch (e: Exception) {
+                        Log.e("HTTP server", "Error desconocido al iniciar el servidor.", e)
+                    }
+                }
             } else {
                 Toast.makeText(this, "File not found", Toast.LENGTH_LONG).show()
             }
@@ -55,7 +55,6 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             AppletDummyTheme {
-                // A surface container using the 'background' color from the theme
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
@@ -68,18 +67,8 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onDestroy() {
-        server.stop(0, 0)
         super.onDestroy()
-    }
-
-    private fun startServer(mediaPath: String) {
-        server = embeddedServer(Netty, port = 8080) {
-            module()
-            static("/") {
-                file("index.html", mediaPath)
-            }
-        }
-        server.start()
+        server?.stop()
     }
 
 }
@@ -95,7 +84,7 @@ fun LocalWebPage() {
         modifier = Modifier.fillMaxSize(),
         factory = {
             webView.apply {
-                loadUrl("http://localhost:8080/api/data")
+                loadUrl("http://localhost:8080/web")
                 lifecycleOwner.lifecycle.addObserver(object : LifecycleEventObserver {
                     override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
                         if (event == Lifecycle.Event.ON_DESTROY) {
@@ -120,13 +109,14 @@ fun rememberWebViewWithClient(
             domStorageEnabled = true
             allowFileAccess = true
             allowContentAccess = true
-            allowFileAccessFromFileURLs = true
-            allowUniversalAccessFromFileURLs = true
         }
 
         webChromeClient = object : WebChromeClient() {
             override fun onConsoleMessage(consoleMessage: ConsoleMessage): Boolean {
-                Log.d("WebView", "${consoleMessage.message()} -- From line ${consoleMessage.lineNumber()} of ${consoleMessage.sourceId()}")
+                Log.d(
+                    "WebView",
+                    "${consoleMessage.message()} -- From line ${consoleMessage.lineNumber()} of ${consoleMessage.sourceId()}"
+                )
                 return super.onConsoleMessage(consoleMessage)
             }
         }
