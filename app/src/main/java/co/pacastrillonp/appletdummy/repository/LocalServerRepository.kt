@@ -16,9 +16,11 @@ class LocalWebServer(private val file: File, private val rootDirectory: File) : 
                     "<html><body><h1>Hola, este es mi servidor web en Android</h1></body></html>"
                 newFixedLengthResponse(msg)
             }
+
             "/web" -> {
                 serveHtmlFile()
             }
+
             else -> {
                 when {
                     uri.endsWith(".html") -> serveFile("text/html", uri)
@@ -26,20 +28,28 @@ class LocalWebServer(private val file: File, private val rootDirectory: File) : 
                     uri.endsWith(".css") -> serveFile("text/css", uri)
                     uri.endsWith(".jpg") || uri.endsWith(".jpeg") -> serveFile("image/jpeg", uri)
                     uri.endsWith(".png") -> serveFile("image/png", uri)
-                    else -> newFixedLengthResponse(Response.Status.NOT_FOUND, MIME_PLAINTEXT, "Not Found")
+                    else -> serveFile("application/octet-stream", uri)
                 }
             }
         }
     }
 
     private fun serveFile(mimeType: String, uri: String): Response {
-      return  try {
+        return try {
             val fileInputStream = FileInputStream(File(rootDirectory, uri))
             return newChunkedResponse(Response.Status.OK, mimeType, fileInputStream)
         } catch (e: FileNotFoundException) {
-            newFixedLengthResponse(Response.Status.NOT_FOUND, MIME_PLAINTEXT, "File Not Found: $uri")
+            newFixedLengthResponse(
+                Response.Status.NOT_FOUND,
+                MIME_PLAINTEXT,
+                "File Not Found: $uri"
+            )
         } catch (e: IOException) {
-            newFixedLengthResponse(Response.Status.INTERNAL_ERROR, MIME_PLAINTEXT, "Internal Server Error: ${e.message}")
+            newFixedLengthResponse(
+                Response.Status.INTERNAL_ERROR,
+                MIME_PLAINTEXT,
+                "Internal Server Error: ${e.message}"
+            )
         }
     }
 
